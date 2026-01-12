@@ -1,0 +1,22 @@
+# docker compose up -d db
+services:
+  db:
+    image: postgres:15
+    container_name: db
+    # Expose PostgreSQL on port 5433 to avoid conflicts with local installations
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: meuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: simple_api
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+volumes:
+  pg_data:
+# catatan:
+# cara akses dbnya lewat docker langsung
+# docker exec -it db psql -U meuser -d simple_api
+# atau lewat localhost
+# psql -h localhost -p 5433 -U meuser -d simple_api
