@@ -6,18 +6,16 @@ cargo add axum tokio sqlx serde serde_json --features=tokio/macros,tokio/rt-mult
 */
 
 mod modules;
-
-use std::env;
-
 use axum::{
-    Router,
+    Json, Router,
     extract::State,
     http::StatusCode,
     routing::{get, post},
 };
 use sqlx::{PgPool, postgres::PgPoolOptions};
+use std::env;
 
-use modules::users::domain::entities::User;
+use modules::users::{applications::dtos::CreateUserPayload, domain::entities::User};
 
 #[tokio::main]
 async fn main() {
@@ -35,17 +33,20 @@ async fn main() {
     let app = Router::new()
         .route("/", get(root))
         .route("/users", post(create_user).get(list_users))
-        .route(
-            "/users/{id}",
-            get(get_user).put(update_user).delete(delete_user),
-        );
+        // .route(
+        //     "/users/{id}",
+        //     get(get_user).put(update_user).delete(delete_user),
+        // );
+        .with_state(pool);
     /*
     kenapa bind ke 0.0.0.0 ? biar bisa diakses dari luar container (jika dijalankan di dalam container)
     8000 itu portnya, bisa diganti sesuai kebutuhan
     */
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
     println!("Listening on http://0.0.0.0:8000");
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app.into_make_service())
+        .await
+        .unwrap();
 }
 
 /*
@@ -69,4 +70,18 @@ async fn list_users(
 }
 
 // CREATE USER
-// async fn create_user()
+async fn create_user(
+    State(pool): State<PgPool>,
+    Json(payload): Json<CreateUserPayload>,
+) -> Result<(StatusCode, Json<User>), StatusCode> {
+    sqlx::query_as::<_, User>(
+        "INSERT INTO users (username, email, password_hash) VALUES ($1, $2) RETURNING *",
+    )
+    .bind(payload.username)
+    .bind(payload.email)
+    .bind(payload.password)
+    .fetch_one(&pool)
+    .await
+    .map(|u| (StatusCode::CREATED, Json(u)))
+    .map_err(|_| StatusCode::NOT_FOUND)
+}
