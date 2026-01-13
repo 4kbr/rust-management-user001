@@ -8,7 +8,7 @@ cargo add axum tokio sqlx serde serde_json --features=tokio/macros,tokio/rt-mult
 mod modules;
 use axum::{
     Json, Router,
-    extract::State,
+    extract::{Path, State},
     http::StatusCode,
     routing::{get, post},
 };
@@ -16,6 +16,8 @@ use sqlx::{PgPool, postgres::PgPoolOptions};
 use std::env;
 
 use modules::users::{applications::dtos::CreateUserPayload, domain::entities::User};
+
+use crate::modules::users::applications::dtos::UpdateUserPayload;
 
 #[tokio::main]
 async fn main() {
@@ -33,10 +35,10 @@ async fn main() {
     let app = Router::new()
         .route("/", get(root))
         .route("/users", post(create_user).get(list_users))
-        // .route(
-        //     "/users/{id}",
-        //     get(get_user).put(update_user).delete(delete_user),
-        // );
+        .route(
+            "/users/{id}",
+            get(get_user).put(update_user).delete(delete_user),
+        )
         .with_state(pool);
     /*
     kenapa bind ke 0.0.0.0 ? biar bisa diakses dari luar container (jika dijalankan di dalam container)
@@ -84,4 +86,53 @@ async fn create_user(
     .await
     .map(|u| (StatusCode::CREATED, Json(u)))
     .map_err(|_| StatusCode::NOT_FOUND)
+}
+
+// GET USER BY ID
+async fn get_user(
+    State(pool): State<PgPool>,
+    Path(id): Path<i32>,
+) -> Result<Json<User>, StatusCode> {
+    sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
+        .bind(id)
+        .fetch_one(&pool)
+        .await
+        .map(Json)
+        .map_err(|_| StatusCode::NOT_FOUND)
+}
+
+// UPDATE USER
+async fn update_user(
+    State(pool): State<PgPool>,
+    Path(id): Path<i32>,
+    Json(payload): Json<UpdateUserPayload>,
+) -> Result<Json<User>, StatusCode> {
+    sqlx::query_as::<_, User>(
+        "UPDATE users SET username = $1, email = $2 WHERE id = $3 RETURNING *",
+    )
+    .bind(payload.username)
+    .bind(payload.email)
+    .bind(id)
+    .fetch_one(&pool)
+    .await
+    .map(Json)
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+}
+
+// DELETE USER
+async fn delete_user(
+    State(pool): State<PgPool>,
+    Path(id): Path<i32>,
+) -> Result<StatusCode, StatusCode> {
+    let result = sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(id)
+        .execute(&pool)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    if result.rows_affected() == 0 {
+        return Err(StatusCode::NOT_FOUND);
+    } else {
+        Ok(StatusCode::NO_CONTENT)
+    }
 }
