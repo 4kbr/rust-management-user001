@@ -1,7 +1,8 @@
 use serde::Deserialize;
-#[derive(Deserialize)]
-struct CreateUserPayload {
-    username: String,
-    email: String,
-    password: String,
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CreateUserPayload {
+    pub username: String,
+    pub email: String,
+    pub password: String,
 }
