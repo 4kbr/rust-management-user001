@@ -7,5 +7,5 @@ pub struct User {
     pub secret_id: String,
     pub username: String,
     pub email: String,
-    pub password: String,
+    pub password_hash: String,
 }
