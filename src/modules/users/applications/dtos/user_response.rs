@@ -1,14 +1,11 @@
-use serde::{Deserialize, Serialize};
-use sqlx::prelude::FromRow;
+use serde::Serialize;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Deserialize, Serialize, FromRow)]
-pub struct User {
-    pub id: i64,
+#[derive(Serialize)]
+pub struct UserResponse {
     pub secret_id: Uuid,
     pub username: String,
     pub email: String,
-    pub password_hash: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }

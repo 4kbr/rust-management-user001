@@ -1,5 +1,22 @@
-# docker compose up -d db
 services:
+  # ini untuk service app
+  app:
+    # line ini untuk build image dari Dockerfile di directory yang sama
+    build: .
+    # ini nama container untuk service app
+    container_name: axum_user_001
+    # expose port 8000 di container ke port 8000 di host
+    ports:
+      - "8000:8000"
+    # ini mengatur agar service app menunggu service db siap terlebih dahulu
+    depends_on:
+      - db
+    # ini untuk mengatur variable environment di dalam container app
+    environment:
+      # kalau dari .env seperti ini
+      DATABASE_URL: ${DATABASE_URL}
+
+  # PostgreSQL Database Service
   db:
     image: postgres:15
     container_name: db
@@ -16,7 +33,16 @@ services:
 volumes:
   pg_data:
 # catatan:
+# cara menjalankan container untuk db-nya:
+# `docker compose up -d db`
 # cara akses dbnya lewat docker langsung
 # docker exec -it db psql -U meuser -d simple_api
 # atau lewat localhost
 # psql -h localhost -p 5433 -U meuser -d simple_api
+
+# menjalankan container appnya
+# docker compose up -d app
+# untuk melihat lognya
+# docker compose logs -f app
+# untuk menghentikan semua container
+# docker compose down
