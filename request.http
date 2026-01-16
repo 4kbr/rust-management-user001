@@ -48,7 +48,7 @@ GET {{baseUrl}}/users/9999
 
 ### 9. Update User 2
 # Note: Ensure your backend handles PUT or PATCH for updates
-PUT {{baseUrl}}/users/4
+PUT {{baseUrl}}/users/2
 Content-Type: application/json
 
 {

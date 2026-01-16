@@ -1,6 +1,9 @@
 services:
   # ini untuk service app
   app:
+    # env_file: .env.local
+    env_file:
+      - .env.staging
     # line ini untuk build image dari Dockerfile di directory yang sama
     build: .
     # ini nama container untuk service app
@@ -14,7 +17,7 @@ services:
     # ini untuk mengatur variable environment di dalam container app
     environment:
       # kalau dari .env seperti ini
-      DATABASE_URL: ${DATABASE_URL}
+      - DATABASE_URL=${DATABASE_URL}
 
   # PostgreSQL Database Service
   db:
@@ -22,7 +25,7 @@ services:
     container_name: db
     # Expose PostgreSQL on port 5433 to avoid conflicts with local installations
     ports:
-      - "5433:5432"
+      - "5432:5432"
     environment:
       POSTGRES_USER: meuser
       POSTGRES_PASSWORD: mypassword
@@ -42,7 +45,13 @@ volumes:
 
 # menjalankan container appnya
 # docker compose up -d app
+# ini untuk rebuild
+# docker compose up -d --build app
 # untuk melihat lognya
 # docker compose logs -f app
 # untuk menghentikan semua container
 # docker compose down
+
+# config
+# docker compose config
+# docker compose --env-file ./.env.docker config
